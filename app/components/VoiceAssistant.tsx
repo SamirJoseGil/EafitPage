@@ -14,22 +14,22 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
   const [inputMessage, setInputMessage] = useState('');
   // Fix the TypeScript error by specifying the proper type
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  
+
   // Speech recognition hook
-  const { 
-    isListening, 
-    transcript, 
-    startListening, 
+  const {
+    isListening,
+    transcript,
+    startListening,
     stopListening,
     resetTranscript,
-    browserSupportsSpeechRecognition 
+    browserSupportsSpeechRecognition
   } = useSpeechRecognition();
-  
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-  
+
   // Send voice transcript when finished listening
   useEffect(() => {
     if (!isListening && transcript && !loading && !speaking) {
@@ -37,7 +37,7 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
       resetTranscript();
     }
   }, [isListening, transcript, loading, speaking]);
-  
+
   // Handle form submission
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,7 +51,7 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* NavBar */}
       <NavBar />
-      
+
       {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-400">
@@ -61,16 +61,15 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
               <h1 className="text-2xl font-bold">Asistente Virtual NODO</h1>
               <p className="text-sm opacity-80">Estoy aquí para resolver tus dudas</p>
             </div>
-            
+
             {/* Mode Toggle */}
             <div className="flex items-center space-x-2 bg-white/10 rounded-lg p-1">
               <button
                 onClick={() => setMode('text')}
-                className={`px-3 py-1.5 rounded-md transition-all ${
-                  mode === 'text' 
-                    ? 'bg-white text-primary-blue font-medium' 
+                className={`px-3 py-1.5 rounded-md transition-all ${mode === 'text'
+                    ? 'bg-white text-primary-blue font-medium'
                     : 'text-white hover:bg-white/20'
-                }`}
+                  }`}
               >
                 <span className="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -79,14 +78,13 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
                   Texto
                 </span>
               </button>
-              
+
               <button
                 onClick={() => setMode('voice')}
-                className={`px-3 py-1.5 rounded-md transition-all ${
-                  mode === 'voice' 
-                    ? 'bg-white text-primary-blue font-medium' 
+                className={`px-3 py-1.5 rounded-md transition-all ${mode === 'voice'
+                    ? 'bg-white text-primary-blue font-medium'
                     : 'text-white hover:bg-white/20'
-                }`}
+                  }`}
               >
                 <span className="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -97,7 +95,7 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
               </button>
             </div>
           </div>
-          
+
           {/* Messages Container */}
           <div className="h-96 overflow-y-auto p-4 bg-gray-50">
             <div className="space-y-4">
@@ -115,16 +113,15 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
                 </div>
               ) : (
                 messages.map((msg, index) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div 
-                      className={`max-w-[75%] rounded-lg p-4 ${
-                        msg.sender === 'user' 
-                          ? 'bg-primary-blue text-white rounded-br-none shadow-md' 
+                    <div
+                      className={`max-w-[75%] rounded-lg p-4 ${msg.sender === 'user'
+                          ? 'bg-primary-blue text-white rounded-br-none shadow-md'
                           : 'bg-white text-gray-800 rounded-bl-none shadow'
-                      }`}
+                        }`}
                     >
                       {msg.sender === 'assistant' && (
                         <div className="flex items-center mb-2">
@@ -179,7 +176,7 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
               <div ref={messagesEndRef} />
             </div>
           </div>
-          
+
           {/* Input Area */}
           <div className="p-4 border-t border-gray-100">
             {mode === 'text' ? (
@@ -195,11 +192,10 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
                 <button
                   type="submit"
                   disabled={!inputMessage.trim() || loading || speaking}
-                  className={`p-3 rounded-full ${
-                    !inputMessage.trim() || loading || speaking
+                  className={`p-3 rounded-full ${!inputMessage.trim() || loading || speaking
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-primary-blue text-white hover:bg-primary-blue/90'
-                  }`}
+                    }`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -213,13 +209,12 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
                     <button
                       onClick={isListening ? stopListening : startListening}
                       disabled={loading || speaking}
-                      className={`p-4 rounded-full ${
-                        loading || speaking
+                      className={`p-4 rounded-full ${loading || speaking
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : isListening
                             ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
                             : 'bg-dark text-white hover:bg-dark/90'
-                      }`}
+                        }`}
                     >
                       {isListening ? (
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -232,11 +227,11 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
                         </svg>
                       )}
                     </button>
-                    
+
                     {isListening && (
                       <p className="mt-3 text-sm text-gray-600 animate-pulse">Escuchando... {transcript && `"${transcript}"`}</p>
                     )}
-                    
+
                     {!isListening && (
                       <p className="mt-3 text-sm text-gray-600">Presiona el botón para hablar</p>
                     )}
@@ -253,8 +248,26 @@ export default function VoiceAssistant({ initialMode = 'text' }: VoiceAssistantP
         </div>
       </main>
       
-      {/* Footer */}
-      <Footer />
+      {/* Bottom bar with copyright */}
+      <div className="bg-dark py-4">
+        <div className="container mx-auto px-6 flex flex-col sm:flex-row justify-between items-center">
+          <p className="text-sm text-gray-300">
+            &copy; {new Date().getFullYear()} Nodo EAFIT. Todos los derechos reservados.
+          </p>
+          <div className="mt-4 sm:mt-0">
+            <a href="/privacidad" className="text-sm text-gray-300 hover:text-accent-green mx-3 transition-colors">Privacidad</a>
+            <a href="/terminos" className="text-sm text-gray-300 hover:text-accent-green mx-3 transition-colors">Términos</a>
+            <a
+              href="https://www.eafit.edu.co/Paginas/PQRSF.aspx"
+              target="_blank"
+              rel="noopener"
+              className="text-sm text-gray-300 hover:text-accent-green mx-3 transition-colors"
+            >
+              PQRS
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
