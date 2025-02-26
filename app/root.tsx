@@ -8,7 +8,7 @@ import {
 import type { LinksFunction } from "@remix-run/node";
 
 import "./tailwind.css";
-import AssistantButtons from "./components/AssistantButtons";
+import FloatingButtons from "./components/Floatingbuttons";
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -21,6 +21,7 @@ export const links: LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
+  { rel: "icon", href: "https://es.nodoeafit.com/wp-content/uploads/2023/11/logo-nodo-eafit.png" }, // Asegúrate de tener un favicon en public/favicon.ico
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -34,7 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
-        <AssistantButtons/>
+        <FloatingButtons/>
         <ScrollRestoration />
         <Scripts />
       </body>

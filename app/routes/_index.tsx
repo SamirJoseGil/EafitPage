@@ -4,6 +4,8 @@ import NavBar from "~/components/NavBar";
 import Footer from "~/components/Footer";
 import DynamicImageSlider from "~/components/DynamicImageSlider";
 import { useEffect, useState } from "react";
+import { MetaFunction } from "@remix-run/node";
+import { getPageMeta } from "~/utils/meta";
 
 const images = [
   "https://via.placeholder.com/1500x500/FF5733/ffffff?text=Imagen+1",
@@ -70,6 +72,15 @@ const testimonials = [
     quote: "Después de años trabajando en otra industria, NODO me dio las herramientas para reinventarme profesionalmente. Ahora trabajo en lo que realmente me apasiona con un salario mucho mejor."
   }
 ];
+
+export const meta: MetaFunction = () => {
+  const pageMeta = getPageMeta('asistente');
+  return [
+    { title: pageMeta.title },
+    { name: "description", content: pageMeta.description },
+  ];
+};
+
 
 export default function Index() {
 

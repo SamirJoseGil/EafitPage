@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { sendMessage, textToSpeech } from "~/services/chatService";
 
 export interface Message {
@@ -10,6 +10,8 @@ export default function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [speaking, setSpeaking] = useState<boolean>(false);
+  const [isSpeechPaused, setIsSpeechPaused] = useState<boolean>(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const sendUserMessage = async (userMessage: string) => {
     const newMessage: Message = { text: userMessage, sender: "user" };
@@ -21,7 +23,7 @@ export default function useChat() {
       const assistantMessage: Message = { text: response, sender: "assistant" };
       setMessages((prevMessages) => [...prevMessages, assistantMessage]);
 
-      // Convert response to speech if needed
+      // Convert response to speech
       speakResponse(response);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -32,45 +34,62 @@ export default function useChat() {
 
   const speakResponse = async (text: string) => {
     setSpeaking(true);
+    setIsSpeechPaused(false);
+    
     try {
       const audioBlob = await textToSpeech(text);
       
-      // Check if we got an audio blob
       if (audioBlob) {
-        // Convert blob to audio element
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
+        audioRef.current = audio;
         
-        // Set up event handler for when audio finishes
         audio.onended = () => {
-          URL.revokeObjectURL(audioUrl); // Clean up URL object
-          setSpeaking(false);
-        };
-        
-        // Handle any errors during playback
-        audio.onerror = (err) => {
-          console.error('Audio playback error:', err);
           URL.revokeObjectURL(audioUrl);
           setSpeaking(false);
+          setIsSpeechPaused(false);
+        };
+        
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          setSpeaking(false);
+          setIsSpeechPaused(false);
         };
         
         // Start playing
-        try {
-          await audio.play();
-        } catch (playError) {
-          console.error('Error playing audio:', playError);
-          URL.revokeObjectURL(audioUrl);
-          setSpeaking(false);
-        }
+        await audio.play();
       } else {
-        console.error('No audio blob received from text-to-speech service');
         setSpeaking(false);
       }
     } catch (error) {
-      console.error('Error speaking response:', error);
+      console.error("Error in speech playback:", error);
       setSpeaking(false);
     }
   };
 
-  return { messages, loading, speaking, sendUserMessage };
+  const pauseSpeech = () => {
+    if (audioRef.current && !isSpeechPaused) {
+      audioRef.current.pause();
+      setIsSpeechPaused(true);
+    }
+  };
+
+  const resumeSpeech = () => {
+    if (audioRef.current && isSpeechPaused) {
+      audioRef.current.play().catch(err => {
+        console.error("Error resuming speech:", err);
+      });
+      setIsSpeechPaused(false);
+    }
+  };
+
+  return { 
+    messages, 
+    loading, 
+    speaking, 
+    sendUserMessage,
+    pauseSpeech,
+    resumeSpeech,
+    isSpeechPaused
+  };
 }
