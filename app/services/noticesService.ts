@@ -2,15 +2,15 @@ export interface Noticia {
   id: number;
   titulo: string;
   contenido: string;
-  resumen: string;
-  imagenUrl: string;  // Mantenemos este nombre para compatibilidad con el backend
-  fuente?: string | null;
-  fechaPublicacion: Date;  // Mantenemos Date para compatibilidad
-  externalId?: string | null;
+  resumen: string | null;
+  imagenUrl: string | null;
+  fuente: string | null;
+  fechaPublicacion: Date;
+  externalId: string | null;
   createdAt: Date;
   updatedAt: Date;
   categoria: 'evento' | 'noticia' | 'blog' | 'actualización';
-  autor?: string | null;
+  autor: string | null;
   tags: string[];
   destacado: boolean;
 }
@@ -29,14 +29,10 @@ export type NoticiaSimple = {
   destacado?: boolean;
 };
 
-// URL del servidor - cambia según el entorno
-const API_URL = process.env.NODE_ENV === 'production'
-  ? 'https://tu-backend-vercel.vercel.app'
-  : 'http://localhost:3001';
-
 export async function getNoticias(page = 1, limit = 10) {
   try {
-    const response = await fetch(`${API_URL}/api/noticias?page=${page}&limit=${limit}`);
+    // Usamos la ruta interna en lugar de una URL externa
+    const response = await fetch(`/api/noticias?page=${page}&limit=${limit}`);
     
     if (!response.ok) {
       throw new Error(`Error: ${response.statusText}`);
@@ -75,7 +71,8 @@ export async function createNoticia(noticia: NoticiaInput | NoticiaSimple) {
       convertirNoticia(noticia as NoticiaSimple) : 
       noticia;
     
-    const response = await fetch(`${API_URL}/api/noticias`, {
+    // Usamos la ruta interna en lugar de una URL externa
+    const response = await fetch(`/api/noticias`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

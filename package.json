@@ -11,6 +11,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "@prisma/client": "^6.5.0",
     "@remix-run/node": "^2.15.3",
     "@remix-run/react": "^2.15.3",
@@ -18,6 +19,7 @@
     "axios": "^1.8.1",
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.40.0",
     "isbot": "^4.1.0",
     "openai": "^4.85.4",
     "prisma": "^6.5.0",
