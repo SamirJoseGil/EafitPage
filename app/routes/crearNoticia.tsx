@@ -7,40 +7,33 @@ import Footer from "~/components/Footer";
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
-  const titulo = formData.get("titulo") as string;
-  const resumen = formData.get("resumen") as string;
-  const contenido = formData.get("contenido") as string;
-  const imagen = formData.get("imagen") as string;
-  const categoria = formData.get("categoria") as any;
-  const autor = formData.get("autor") as string;
-  const tagsString = formData.get("tags") as string;
-  const tags = tagsString.split(',').map(tag => tag.trim());
-  const destacado = formData.get("destacado") === "true";
   
   const noticia: NoticiaSimple = {
-    titulo,
-    resumen,
-    contenido,
-    imagen,
-    fecha: new Date().toISOString().split('T')[0],
-    categoria,
-    autor,
-    tags,
-    destacado
+    titulo: formData.get("titulo") as string,
+    resumen: formData.get("resumen") as string,
+    contenido: formData.get("contenido") as string,
+    imagen: formData.get("imagen") as string,
+    fecha: new Date().toISOString(),
+    categoria: formData.get("categoria") as any,
+    autor: formData.get("autor") as string,
+    tags: formData.get("tags") 
+      ? (formData.get("tags") as string).split(",").map(tag => tag.trim())
+      : [],
+    destacado: formData.get("destacado") === "true"
   };
 
   try {
     await createNoticia(noticia);
     return redirect("/enterate");
   } catch (error) {
-    return json({ error: "Error al crear la noticia" }, { status: 500 });
+    console.error("Error al crear noticia:", error);
+    return json({ error: "Error al crear la noticia" });
   }
 };
 
-export default function AdminEnterate() {
+export default function AdminNoticias() {
   const actionData = useActionData<typeof action>();
   const [previewImage, setPreviewImage] = useState("");
-  const navigate = useNavigate();
   
   return (
     <>
@@ -150,8 +143,8 @@ export default function AdminEnterate() {
               type="text"
               name="tags"
               id="tags"
-              className="w-full px-3 py-2 border rounded-md"
               placeholder="noticias, eafit, programación"
+              className="w-full px-3 py-2 border rounded-md"
             />
           </div>
           
@@ -167,21 +160,12 @@ export default function AdminEnterate() {
             </label>
           </div>
           
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              className="bg-primary-blue text-white px-6 py-2 rounded-md hover:bg-primary-blue/80"
-            >
-              Crear Noticia
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/enterate')}
-              className="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400"
-            >
-              Cancelar
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="bg-primary-blue text-white px-6 py-3 rounded-md hover:bg-primary-blue/80 transition-colors"
+          >
+            Crear Noticia
+          </button>
         </Form>
       </div>
       <Footer />
