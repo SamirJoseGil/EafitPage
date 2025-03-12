@@ -32,7 +32,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ error: "Los campos título y contenido son obligatorios" }, { status: 400 });
     }
 
-    // IMPORTANTE: Convertir el array de tags a formato JSON
+    // SOLUCIÓN: Convertir el array de tags a formato JSON string
     const tagsJson = JSON.stringify(tags || []);
     
     console.log("Tags convertidos a JSON:", tagsJson);
@@ -55,7 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
         new Date(fechaPublicacion || Date.now()),
         categoria || 'noticia',
         autor || null,
-        tagsJson, // ← AQUÍ ESTÁ EL CAMBIO CLAVE
+        tagsJson, // ← Usando la versión JSON stringificada
         destacado || false
       ]
     );
