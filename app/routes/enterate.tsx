@@ -2,22 +2,53 @@ import { useState } from "react";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { getNoticias } from "~/services/noticesService";
 import type { Noticia } from "~/services/noticesService";
+import { executeQuery } from "~/services/db.server";
 import Footer from "~/components/Footer";
 import NavBar from "~/components/NavBar";
+
+// Definir el tipo de respuesta del loader
+type LoaderData = {
+    noticias: Noticia[];
+    pagination: {
+        total: number;
+        pages: number;
+        currentPage: number;
+    };
+};
 
 export async function loader({ request }: LoaderFunctionArgs) {
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = 10;
+    const skip = (page - 1) * limit;
 
-    const { data, pagination } = await getNoticias(page, limit);
+    try {
+        // Consulta para obtener noticias con paginación
+        const noticias = await executeQuery(
+            `SELECT * FROM "Noticia" ORDER BY "fechaPublicacion" DESC LIMIT $1 OFFSET $2`,
+            [limit, skip]
+        );
 
-    return json({
-        noticias: data,
-        pagination
-    });
+        // Consulta para contar el total de noticias
+        const [countResult] = await executeQuery(`SELECT COUNT(*) as total FROM "Noticia"`);
+        const total = parseInt(countResult?.total || "0");
+
+        return json<LoaderData>({
+            noticias: noticias as Noticia[],
+            pagination: {
+                total,
+                pages: Math.ceil(total / limit),
+                currentPage: page
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching noticias:", error);
+        return json<LoaderData>({
+            noticias: [],
+            pagination: { total: 0, pages: 0, currentPage: page }
+        });
+    }
 }
 
 // Función para formatear fechas
@@ -40,8 +71,9 @@ const coloresCategorias: Record<string, string> = {
 };
 
 export default function Enterate() {
+    // Usar tipado explícito para los datos del loader
     const { noticias, pagination } = useLoaderData<typeof loader>();
-    
+
     // Estado para filtrar por categoría
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string | null>(null);
 
@@ -59,16 +91,18 @@ export default function Enterate() {
         );
     }
 
-    // Noticias filtradas según la selección
+    // Noticias filtradas según la selección - con cast de tipo para solucionar errores
     const noticiasFiltradas = categoriaSeleccionada
-        ? noticias.filter((noticia: Noticia) => noticia.categoria === categoriaSeleccionada)
-        : noticias;
+        ? (noticias as unknown as Noticia[]).filter(noticia => noticia.categoria === categoriaSeleccionada)
+        : (noticias as unknown as Noticia[]);
 
-    // Noticia destacada (primera en la lista o marcada como destacada)
-    const noticiaDestacada = noticias.find((noticia: Noticia) => noticia.destacado) || noticias[0];
-    
-    // Resto de noticias (excluyendo la destacada)
-    const restaNoticias = noticiasFiltradas.filter((noticia: Noticia) => noticia.id !== noticiaDestacada.id);
+    // Noticia destacada (primera en la lista o marcada como destacada) - con cast de tipo
+    const noticiaDestacada = (noticias as unknown as Noticia[]).find(noticia => noticia.destacado) ||
+        (noticias as unknown as Noticia[])[0];
+
+    // Resto de noticias (excluyendo la destacada) - con cast de tipo
+    const restaNoticias = (noticiasFiltradas as unknown as Noticia[])
+        .filter(noticia => noticia.id !== (noticiaDestacada as Noticia).id);
 
     return (
         <>
@@ -138,11 +172,10 @@ export default function Enterate() {
                                     className="w-full object-cover"
                                 />
                                 <div className="absolute top-4 left-4">
-                                    <span className={`px-4 py-1 rounded-full text-sm font-bold ${
-                                        coloresCategorias[noticiaDestacada.categoria as keyof typeof coloresCategorias] || coloresCategorias.default
-                                    }`}>
-                                        {noticiaDestacada.categoria?.charAt(0).toUpperCase() + 
-                                         (noticiaDestacada.categoria?.slice(1) || "Noticia")}
+                                    <span className={`px-4 py-1 rounded-full text-sm font-bold ${coloresCategorias[noticiaDestacada.categoria as keyof typeof coloresCategorias] || coloresCategorias.default
+                                        }`}>
+                                        {noticiaDestacada.categoria?.charAt(0).toUpperCase() +
+                                            (noticiaDestacada.categoria?.slice(1) || "Noticia")}
                                     </span>
                                 </div>
                             </div>
@@ -202,11 +235,10 @@ export default function Enterate() {
                                                 className="w-full h-48 object-cover"
                                             />
                                             <div className="absolute top-3 left-3">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                                    coloresCategorias[noticia.categoria as keyof typeof coloresCategorias] || coloresCategorias.default
-                                                }`}>
-                                                    {noticia.categoria?.charAt(0).toUpperCase() + 
-                                                     (noticia.categoria?.slice(1) || "Noticia")}
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${coloresCategorias[noticia.categoria as keyof typeof coloresCategorias] || coloresCategorias.default
+                                                    }`}>
+                                                    {noticia.categoria?.charAt(0).toUpperCase() +
+                                                        (noticia.categoria?.slice(1) || "Noticia")}
                                                 </span>
                                             </div>
                                         </div>
@@ -253,8 +285,8 @@ export default function Enterate() {
                         {pagination.pages > 1 && (
                             <div className="flex justify-center mt-12">
                                 <nav className="flex items-center space-x-2">
-                                    <a 
-                                        href={`/enterate?page=${Math.max(1, pagination.currentPage - 1)}`} 
+                                    <a
+                                        href={`/enterate?page=${Math.max(1, pagination.currentPage - 1)}`}
                                         className="w-10 h-10 rounded-full bg-white text-dark border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                                     >
                                         <span className="sr-only">Anterior</span>
@@ -262,22 +294,21 @@ export default function Enterate() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
                                         </svg>
                                     </a>
-                                    
+
                                     {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
-                                        <a 
+                                        <a
                                             key={page}
                                             href={`/enterate?page=${page}`}
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                                page === pagination.currentPage 
-                                                ? "bg-primary-blue text-white" 
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center ${page === pagination.currentPage
+                                                ? "bg-primary-blue text-white"
                                                 : "bg-white text-dark border border-gray-300 hover:bg-gray-100"
-                                            }`}
+                                                }`}
                                         >
                                             {page}
                                         </a>
                                     ))}
-                                    
-                                    <a 
+
+                                    <a
                                         href={`/enterate?page=${Math.min(pagination.pages, pagination.currentPage + 1)}`}
                                         className="w-10 h-10 rounded-full bg-white text-dark border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                                     >

@@ -1,12 +1,33 @@
-// /app/services/db.server.ts
 import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
 
-// Usar DATABASE_URL de las variables de entorno
-const sql = neon(process.env.DATABASE_URL!);
-export const db = drizzle(sql);
-
-// Función auxiliar para ejecutar consultas SQL directas
-export async function executeQuery(query: string, params: any[] = []) {
-  return sql(query, params);
+// Función para obtener una conexión a la base de datos con mejor manejo de errores
+function getDatabaseConnection() {
+  const url = process.env.DATABASE_URL;
+  
+  if (!url) {
+    console.error("⚠️ DATABASE_URL no está definido. Verifica las variables de entorno.");
+    throw new Error("No database connection string was provided. Set DATABASE_URL environment variable.");
+  }
+  
+  try {
+    const sql = neon(url);
+    
+    // Función para ejecutar consultas con mejor manejo de errores
+    const executeQuery = async (query: string, params: any[] = []) => {
+      try {
+        return await sql(query, params);
+      } catch (error) {
+        console.error("Error ejecutando consulta SQL:", error);
+        throw error;
+      }
+    };
+    
+    return { executeQuery };
+  } catch (connectError) {
+    console.error("Error al conectar con la base de datos Neon:", connectError);
+    throw connectError;
+  }
 }
+
+// Exportar la función de consulta
+export const { executeQuery } = getDatabaseConnection();
