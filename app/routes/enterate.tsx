@@ -1,75 +1,27 @@
 import { useState } from "react";
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "@remix-run/node";
+import { getNoticias } from "~/services/noticesService";
+import type { Noticia } from "~/services/noticesService";
 import Footer from "~/components/Footer";
 import NavBar from "~/components/NavBar";
 
-// Definición de la interfaz para las noticias
-interface Noticia {
-    id: number;
-    titulo: string;
-    resumen: string;
-    contenido: string;
-    imagen: string;
-    fecha: string;
-    categoria: 'evento' | 'noticia' | 'blog' | 'actualización';
-    autor?: string;
-    tags?: string[];
-    destacado?: boolean;
+export async function loader({ request }: LoaderFunctionArgs) {
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = 10;
+
+    const { data, pagination } = await getNoticias(page, limit);
+
+    return json({
+        noticias: data,
+        pagination
+    });
 }
 
-// Datos de muestra para noticias
-const noticias: Noticia[] = [
-    {
-        "id": 1,
-        "titulo": "EAFIT lanza Nodo para cerrar brecha de 70 mil roles en TI",
-        "resumen": "Nuevo centro de formación tecnológica ofrece rutas de aprendizaje con retos reales de empresas aliadas como Bancolombia y Pragma.",
-        "contenido": "El Centro Nodo de EAFIT, presentado en enero de 2025, combina formación en desarrollo web con metodologías ágiles basadas en retos industriales. Su primera ruta incluye tres módulos virtuales enfocados en programación, machine learning y ciencia de datos, con posibilidad de completarse en un año. Las empresas participantes proponen desafíos reales para aplicar los conocimientos[4][8].",
-        "imagen": "https://universidadeafit.widen.net/content/afefbf23-d5f7-4759-9638-b1a309a4fd78/web/Nodo-centro.jpg?crop=yes&amp;k=c&amp;w=823&amp;h=450&amp;itok=OjfiOu9r",
-        "fecha": "2025-01-26",
-        "categoria": "noticia",
-        "autor": "Equipo Nodo",
-        "tags": ["transformación digital", "habilidades tech", "alianzas empresariales"],
-        "destacado": false
-    },
-    {
-        "id": 2,
-        "titulo": "Cloud Native: nuevo curso de arquitecturas escalables",
-        "resumen": "Programa actualizado en computación en la nube incluye AWS, Azure y Google Cloud con mentorías de expertos.",
-        "contenido": "El curso Cloud Native (2025) profundiza en contenedores Docker, Kubernetes y microservicios, requiriendo 26 horas semanales de dedicación. Combina 72 horas de mentorías con plataforma Edublocks, permitiendo certificación en múltiples proveedores cloud. Última cohorte inicia en marzo 2025 con descuentos para comunidad EAFIT[3][6].",
-        "imagen": "https://aula.nodoeafit.com//contenido/modulo_conferencias/img/1cCloudNativeMiniaturas-Nuevas-Nodo.jpg",
-        "fecha": "2025-02-20",
-        "categoria": "noticia",
-        "autor": "Equipo Cloud",
-        "tags": ["aws", "azure", "devops", "kubernetes"],
-        "destacado": false
-    },
-    {
-        "id": 3,
-        "titulo": "Ruta Desarrollo Web 2025 abre inscripciones",
-        "resumen": "Programa intensivo de 12 meses con módulos en Front-End (React), Back-End (Node.js) y Cloud (AWS).",
-        "contenido": "La ruta incluye proyectos reales con empresas TI, mentorías personalizadas y opción de empleabilidad desde el primer módulo. Modalidades intensiva (3 meses/módulo) y semi-intensiva (4.5 meses) adaptables a horarios laborales. Nuevo contenido 2025: Web3 y arquitecturas serverless[1][2][6].",
-        "imagen": "https://www.eafit.edu.co/PublishingImages/inscripcionesbanner.jpg",
-        "fecha": "2025-02-15",
-        "categoria": "noticia",
-        "autor": "Equipo Desarrollo",
-        "tags": ["react", "nodejs", "web3", "empleabilidad"],
-        "destacado": false
-    },
-    {
-        "id": 4,
-        "titulo": "Samir José, el urraeño de 16 años que tiene becado el sueño de ser programador",
-        "resumen": "Gracias a su participación destacada en Parche Tek, Samir José Gil obtuvo una beca para estudiar desarrollo web en Nodo, el centro de formación en tecnología de EAFIT.",
-        "contenido": "Samir José Gil, un joven de 16 años oriundo de Urrao, Antioquia, descubrió su pasión por la programación mientras cursaba noveno grado en la Institución Educativa Jaiperá, donde se ofrece formación técnica en sistemas en convenio con el SENA. Motivado por una convocatoria que encontró en Instagram, se unió a Parche Tek, un proyecto colaborativo entre El Colombiano, EAFIT y empresas tecnológicas, cuyo objetivo era desarrollar un newsgame que explorara el mundo de los programadores en el Valle de Aburrá. Su dedicación y aportes en este proyecto le valieron una de las seis becas otorgadas para estudiar la ruta completa de desarrollo web en Nodo, el centro de formación en tecnología de EAFIT.",
-        "imagen": "https://www.eafit.edu.co/sites/catalogo/PublishingImages/Noticias/2023/Parche-Tek.jpg",
-        "fecha": "2023-08-11",
-        "categoria": "noticia",
-        "autor": "Universidad EAFIT",
-        "tags": ["Parche Tek", "Nodo", "beca", "desarrollo web"],
-        "destacado": true
-    }
-];
-
 // Función para formatear fechas
-const formatearFecha = (fechaStr: string): string => {
+const formatearFecha = (fechaStr: string | Date): string => {
     const fecha = new Date(fechaStr);
     return new Intl.DateTimeFormat('es-ES', {
         day: 'numeric',
@@ -83,23 +35,40 @@ const coloresCategorias: Record<string, string> = {
     evento: 'bg-accent-yellow text-dark',
     noticia: 'bg-primary-blue text-white',
     blog: 'bg-accent-green text-dark',
-    actualización: 'bg-dark text-white'
+    actualización: 'bg-dark text-white',
+    default: 'bg-primary-blue text-white'
 };
 
 export default function Enterate() {
+    const { noticias, pagination } = useLoaderData<typeof loader>();
+    
     // Estado para filtrar por categoría
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string | null>(null);
 
+    // Si no hay noticias o es el primer render con datos vacíos
+    if (!noticias || noticias.length === 0) {
+        return (
+            <>
+                <NavBar />
+                <div className="container mx-auto py-12 px-4">
+                    <h1 className="text-3xl font-bold mb-8">Entérate</h1>
+                    <p className="text-center text-gray-500 py-12">Cargando noticias...</p>
+                </div>
+                <Footer />
+            </>
+        );
+    }
+
     // Noticias filtradas según la selección
     const noticiasFiltradas = categoriaSeleccionada
-        ? noticias.filter(noticia => noticia.categoria === categoriaSeleccionada)
+        ? noticias.filter((noticia: Noticia) => noticia.categoria === categoriaSeleccionada)
         : noticias;
 
     // Noticia destacada (primera en la lista o marcada como destacada)
-    const noticiaDestacada = noticias.find(noticia => noticia.destacado) || noticias[0];
-
+    const noticiaDestacada = noticias.find((noticia: Noticia) => noticia.destacado) || noticias[0];
+    
     // Resto de noticias (excluyendo la destacada)
-    const restaNoticias = noticiasFiltradas.filter(noticia => noticia.id !== noticiaDestacada.id);
+    const restaNoticias = noticiasFiltradas.filter((noticia: Noticia) => noticia.id !== noticiaDestacada.id);
 
     return (
         <>
@@ -140,9 +109,9 @@ export default function Enterate() {
                             {['evento', 'noticia', 'blog', 'actualización'].map((cat) => (
                                 <button
                                     key={cat}
-                                    onClick={() => setCategoriaSeleccionada(cat)}
+                                    onClick={() => setCategoriaSeleccionada(cat as any)}
                                     className={`px-6 py-2 rounded-full font-medium transition-all ${categoriaSeleccionada === cat
-                                        ? coloresCategorias[cat]
+                                        ? coloresCategorias[cat] || coloresCategorias.default
                                         : 'bg-white text-dark hover:bg-gray-200'
                                         }`}
                                 >
@@ -164,28 +133,31 @@ export default function Enterate() {
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                             <div className="lg:col-span-7 rounded-xl overflow-hidden relative">
                                 <img
-                                    src={noticiaDestacada.imagen}
+                                    src={noticiaDestacada.imagenUrl || "https://via.placeholder.com/800x500?text=Sin+imagen"}
                                     alt={noticiaDestacada.titulo}
                                     className="w-full object-cover"
                                 />
                                 <div className="absolute top-4 left-4">
-                                    <span className={`px-4 py-1 rounded-full text-sm font-bold ${coloresCategorias[noticiaDestacada.categoria]}`}>
-                                        {noticiaDestacada.categoria.charAt(0).toUpperCase() + noticiaDestacada.categoria.slice(1)}
+                                    <span className={`px-4 py-1 rounded-full text-sm font-bold ${
+                                        coloresCategorias[noticiaDestacada.categoria as keyof typeof coloresCategorias] || coloresCategorias.default
+                                    }`}>
+                                        {noticiaDestacada.categoria?.charAt(0).toUpperCase() + 
+                                         (noticiaDestacada.categoria?.slice(1) || "Noticia")}
                                     </span>
                                 </div>
                             </div>
                             <div className="lg:col-span-5 flex flex-col justify-center py-6">
                                 <div className="text-sm text-gray-500 mb-2">
-                                    {formatearFecha(noticiaDestacada.fecha)}
+                                    {formatearFecha(noticiaDestacada.fechaPublicacion)}
                                 </div>
                                 <h3 className="text-3xl font-bold mb-4 text-dark">
                                     {noticiaDestacada.titulo}
                                 </h3>
                                 <p className="text-gray-600 mb-6">
-                                    {noticiaDestacada.contenido}
+                                    {noticiaDestacada.resumen}
                                 </p>
                                 <div className="flex flex-wrap gap-2 mb-6">
-                                    {noticiaDestacada.tags?.map((tag, index) => (
+                                    {noticiaDestacada.tags?.map((tag: string, index: number) => (
                                         <span
                                             key={index}
                                             className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm"
@@ -218,27 +190,30 @@ export default function Enterate() {
 
                         {restaNoticias.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {restaNoticias.map((noticia) => (
+                                {restaNoticias.map((noticia: Noticia) => (
                                     <div
                                         key={noticia.id}
                                         className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300"
                                     >
                                         <div className="relative">
                                             <img
-                                                src={noticia.imagen}
+                                                src={noticia.imagenUrl || "https://via.placeholder.com/400x240?text=Sin+imagen"}
                                                 alt={noticia.titulo}
                                                 className="w-full h-48 object-cover"
                                             />
                                             <div className="absolute top-3 left-3">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${coloresCategorias[noticia.categoria]}`}>
-                                                    {noticia.categoria.charAt(0).toUpperCase() + noticia.categoria.slice(1)}
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                    coloresCategorias[noticia.categoria as keyof typeof coloresCategorias] || coloresCategorias.default
+                                                }`}>
+                                                    {noticia.categoria?.charAt(0).toUpperCase() + 
+                                                     (noticia.categoria?.slice(1) || "Noticia")}
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="p-6">
                                             <div className="flex justify-between items-center mb-3">
                                                 <span className="text-sm text-gray-500">
-                                                    {formatearFecha(noticia.fecha)}
+                                                    {formatearFecha(noticia.fechaPublicacion)}
                                                 </span>
                                                 {noticia.autor && (
                                                     <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
@@ -274,28 +249,43 @@ export default function Enterate() {
                             </div>
                         )}
 
-                        {/* Paginación básica */}
-                        {restaNoticias.length > 0 && (
+                        {/* Paginación dinámica */}
+                        {pagination.pages > 1 && (
                             <div className="flex justify-center mt-12">
                                 <nav className="flex items-center space-x-2">
-                                    <button className="w-10 h-10 rounded-full bg-white text-dark border border-gray-300 flex items-center justify-center hover:bg-gray-100">
+                                    <a 
+                                        href={`/enterate?page=${Math.max(1, pagination.currentPage - 1)}`} 
+                                        className="w-10 h-10 rounded-full bg-white text-dark border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                                    >
                                         <span className="sr-only">Anterior</span>
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
                                         </svg>
-                                    </button>
-                                    <button className="w-10 h-10 rounded-full bg-primary-blue text-white flex items-center justify-center">
-                                        1
-                                    </button>
-                                    <button className="w-10 h-10 rounded-full bg-white text-dark border border-gray-300 flex items-center justify-center hover:bg-gray-100">
-                                        2
-                                    </button>
-                                    <button className="w-10 h-10 rounded-full bg-white text-dark border border-gray-300 flex items-center justify-center hover:bg-gray-100">
+                                    </a>
+                                    
+                                    {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
+                                        <a 
+                                            key={page}
+                                            href={`/enterate?page=${page}`}
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                                page === pagination.currentPage 
+                                                ? "bg-primary-blue text-white" 
+                                                : "bg-white text-dark border border-gray-300 hover:bg-gray-100"
+                                            }`}
+                                        >
+                                            {page}
+                                        </a>
+                                    ))}
+                                    
+                                    <a 
+                                        href={`/enterate?page=${Math.min(pagination.pages, pagination.currentPage + 1)}`}
+                                        className="w-10 h-10 rounded-full bg-white text-dark border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                                    >
                                         <span className="sr-only">Siguiente</span>
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                                         </svg>
-                                    </button>
+                                    </a>
                                 </nav>
                             </div>
                         )}
