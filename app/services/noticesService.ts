@@ -2,15 +2,15 @@ export interface Noticia {
   id: number;
   titulo: string;
   contenido: string;
-  resumen: string | null;
-  imagenUrl: string | null;
-  fuente: string | null;
+  resumen: string;
+  imagenUrl: string;
+  fuente?: string | null;
   fechaPublicacion: Date;
-  externalId: string | null;
+  externalId?: string | null;
   createdAt: Date;
   updatedAt: Date;
   categoria: 'evento' | 'noticia' | 'blog' | 'actualización';
-  autor: string | null;
+  autor?: string | null;
   tags: string[];
   destacado: boolean;
 }
@@ -31,8 +31,25 @@ export type NoticiaSimple = {
 
 export async function getNoticias(page = 1, limit = 10) {
   try {
-    // Usamos la ruta interna en lugar de una URL externa
-    const response = await fetch(`/api/noticias?page=${page}&limit=${limit}`);
+    // Determinar si estamos en el cliente o el servidor
+    const isClient = typeof window !== 'undefined';
+    
+    let url: URL;
+    if (isClient) {
+      // En el cliente: usar URL relativa
+      url = new URL(`/api/noticias`, window.location.origin);
+    } else {
+      // En el servidor: usar la URL interna completa de Vercel
+      const host = process.env.VERCEL_URL || 'localhost:3000';
+      const protocol = host.includes('localhost') ? 'http' : 'https';
+      url = new URL(`/api/noticias`, `${protocol}://${host}`);
+    }
+    
+    // Agregar los parámetros de query
+    url.searchParams.append('page', page.toString());
+    url.searchParams.append('limit', limit.toString());
+    
+    const response = await fetch(url.toString());
     
     if (!response.ok) {
       throw new Error(`Error: ${response.statusText}`);
@@ -71,8 +88,21 @@ export async function createNoticia(noticia: NoticiaInput | NoticiaSimple) {
       convertirNoticia(noticia as NoticiaSimple) : 
       noticia;
     
-    // Usamos la ruta interna en lugar de una URL externa
-    const response = await fetch(`/api/noticias`, {
+    // Determinar si estamos en el cliente o el servidor
+    const isClient = typeof window !== 'undefined';
+    
+    let url: URL;
+    if (isClient) {
+      // En el cliente: usar URL relativa
+      url = new URL(`/api/noticias`, window.location.origin);
+    } else {
+      // En el servidor: usar la URL interna completa de Vercel
+      const host = process.env.VERCEL_URL || 'localhost:3000';
+      const protocol = host.includes('localhost') ? 'http' : 'https';
+      url = new URL(`/api/noticias`, `${protocol}://${host}`);
+    }
+    
+    const response = await fetch(url.toString(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
